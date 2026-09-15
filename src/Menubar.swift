@@ -37,7 +37,9 @@ class Menubar {
         addMenuItem(NSLocalizedString("Show", comment: "Menubar option"), #selector(App.showUiFromShortcut0), "", "eye", nil, App.self)
         menu.addItem(NSMenuItem.separator())
         addMenuItem(NSLocalizedString("Settings…", comment: "Menubar option"), #selector(App.showSettingsWindow), ",", "gear", nil, App.self)
+        #if !ALT2TAB // alt2tab fork: no updater (App.updaterController stays nil)
         addMenuItem(NSLocalizedString("Check for updates…", comment: "Menubar option"), #selector(App.checkForUpdatesNow), "", "checkmark.arrow.trianglehead.clockwise", nil, App.self)
+        #endif
         addMenuItem(NSLocalizedString("Check permissions…", comment: "Menubar option"), #selector(App.checkPermissions), "", "hand.raised", nil, App.self)
         menu.addItem(NSMenuItem.separator())
         addMenuItem(String(format: NSLocalizedString("About %@", comment: "Menubar option. %@ is AltTab"), App.name), #selector(App.showAboutWindow), "", "info.circle", nil, App.self)
@@ -92,7 +94,11 @@ class Menubar {
         case .pro:
             toggleUpgradeMenuItem(false)
             supportProjectMenuItem.isHidden = true
+            #if ALT2TAB // alt2tab fork: no upstream account page
+            myAccountMenuItem.isHidden = true
+            #else
             myAccountMenuItem.isHidden = false
+            #endif
         case .proExpired:
             toggleUpgradeMenuItem(true)
             supportProjectMenuItem.isHidden = false
