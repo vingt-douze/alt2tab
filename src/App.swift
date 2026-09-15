@@ -13,7 +13,7 @@ class App: AppCenterApplication {
     static let name = Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as! String
     static let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as! String
     static let licence = Bundle.main.object(forInfoDictionaryKey: "NSHumanReadableCopyright") as! String
-    static let repository = "https://github.com/lwouis/alt-tab-macos"
+    static let repository = "https://github.com/vingt-douze/alt2tab"
     static let appIconReps = CGImage.allNamed("app.icns")
 
     static func appIcon(for size: NSSize) -> CGImage {
@@ -148,12 +148,16 @@ class App: AppCenterApplication {
     }
 
     @objc static func showFeedbackPanel() {
+        #if ALT2TAB
+        NSWorkspace.shared.open(URL(string: App.repository + "/issues")!) // alt2tab fork: no feedback backend
+        #else
         let wasFresh = FeedbackWindow.shared == nil
         initializeFeedbackWindowIfNeeded()
         // Fresh init already runs reset(); skip the redundant second call so we don't
         // double-fire the Sparkle preflight on the first ever open.
         if !wasFresh { FeedbackWindow.shared?.reset() }
         showSecondaryWindow(FeedbackWindow.shared!)
+        #endif
     }
 
     @objc static func showDebugWindow() {
@@ -515,6 +519,7 @@ class App: AppCenterApplication {
         // Needs the AX runloop `BackgroundWork.start()` created, so it cannot go with the launch-time setup.
         AxObserverRegistry.shared.startRecoveryTicks()
         CliEvents.observe()
+        #if !ALT2TAB // alt2tab fork: updater stays nil; every consumer optional-chains it
         App.sparkleDelegate = SparkleDelegate()
         App.updaterController = SPUStandardUpdaterController(
             startingUpdater: false,
@@ -523,6 +528,7 @@ class App: AppCenterApplication {
         DispatchQueue.main.asyncAfter(deadline: .now() + 30) {
             App.updaterController?.startUpdater()
         }
+        #endif
         PreferencesEvents.initialize()
         BenchmarkRunner.startIfNeeded()
         showSettingsWindowOnFirstLaunchIfNeeded()
@@ -545,7 +551,12 @@ class App: AppCenterApplication {
 
 extension App: NSApplicationDelegate {
     func applicationDidFinishLaunching(_ aNotification: Notification) {
+        #if ALT2TAB
+        // AppCenterCrash.init registers this default upstream; keep AppKit's exception behavior without starting AppCenter
+        UserDefaults.standard.register(defaults: ["NSApplicationCrashOnExceptions": true])
+        #else
         App.appCenterDelegate = AppCenterCrash()
+        #endif
         App.shared.disableRelaunchOnLogin()
         Logger.initialize()
         MainThreadStall.observe()
@@ -583,7 +594,9 @@ extension App: NSApplicationDelegate {
         LicenseManager.shared.onBeforeProUnlock = { ProTransitionManager.shared.onProUnlocked() }
         LicenseManager.shared.onStateChanged = { state in
             Menubar.refreshLicenseMenuItems()
+            #if !ALT2TAB
             syncLicenseCookie(state: state)
+            #endif
             ProTransitionManager.shared.onLicenseStateChanged()
             UpgradeTab.refreshStatus()
             SettingsWindow.shared?.refreshUpgradeButton()
@@ -610,6 +623,9 @@ extension App: NSApplicationDelegate {
     }
 
     private func handleCustomUrl(_ url: URL) {
+        #if ALT2TAB_FORCE_PRO
+        return // alt2tab fork: license state is forced to .pro; never activate against the license API
+        #else
         guard url.host == "activate",
               let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
               let licenseKey = components.queryItems?.first(where: { $0.name == "license_key" })?.value,
@@ -626,6 +642,7 @@ extension App: NSApplicationDelegate {
                 UpgradeTab.showAutoActivationFailed(licenseKey)
             }
         }
+        #endif
     }
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {

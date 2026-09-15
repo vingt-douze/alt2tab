@@ -1,7 +1,15 @@
 // alt2tab fork settings. Included as the last line of debug.xcconfig and release.xcconfig (never test-*.xcconfig)
 // so it comes after upstream's own SWIFT_ACTIVE_COMPILATION_CONDITIONS and $(inherited) keeps DEBUG.
 
-SWIFT_ACTIVE_COMPILATION_CONDITIONS = $(inherited) ALT2TAB_FORCE_PRO // LicenseManager.computeState() returns .pro
+// ALT2TAB: fork behavior (no upstream Sparkle feed, AppCenter, license API, feedback backend)
+// ALT2TAB_FORCE_PRO: LicenseManager.computeState() returns .pro
+SWIFT_ACTIVE_COMPILATION_CONDITIONS = $(inherited) ALT2TAB ALT2TAB_FORCE_PRO
+
+// Fail-safes so no Alt²Tab build can reach upstream's commercial infrastructure even if a code guard is lost in a merge.
+// Endpoints derives every upstream URL (website, appcast, support, checkout, account, license API, feedback API) from these.
+DOMAIN = github.com/vingt-douze/alt2tab
+API_DOMAIN = alt2tab.invalid // RFC 2606 reserved TLD: never resolves
+APPCENTER_SECRET = // empty: AppCenter refuses to start Crashes without a secret; overrides any local.xcconfig value
 
 // Separate identity from upstream AltTab so macOS (TCC permissions, UserDefaults, LaunchServices) treats the fork as its own app.
 PRODUCT_NAME = Alt2Tab
