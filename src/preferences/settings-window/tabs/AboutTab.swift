@@ -33,6 +33,9 @@ class AboutTab {
         }
         let supportProjectCell = grid.cell(atColumnIndex: 0, rowIndex: showFeedbackButton ? 2 : 1)
         supportProjectCell.xPlacement = .center
+        #if ALT2TAB // alt2tab fork: no donation link; hiding the row collapses it so the grid leaves no gap
+        supportProjectCell.row?.isHidden = true
+        #endif
         if fitToContent {
             grid.fit()
         }
@@ -150,7 +153,7 @@ class AboutWindow: NSPanel {
         let weekCount = UsageStats.count("triggers", since: now.addingTimeInterval(-7 * 24 * 3600))
         let monthCount = UsageStats.count("triggers", since: now.addingTimeInterval(-30 * 24 * 3600))
         let yearCount = UsageStats.count("triggers", since: now.addingTimeInterval(-365 * 24 * 3600))
-        let markdown = "## \(NSLocalizedString("Usage", comment: ""))\n\nYou have used AltTab:\n\u{2022} **\(weekCount)** times in the past week\n\u{2022} **\(monthCount)** times in the past month\n\u{2022} **\(yearCount)** times in the past year"
+        let markdown = "## \(NSLocalizedString("Usage", comment: ""))\n\nYou have used \(App.name):\n\u{2022} **\(weekCount)** times in the past week\n\u{2022} **\(monthCount)** times in the past month\n\u{2022} **\(yearCount)** times in the past year"
         usageTextView.textStorage!.setAttributedString(Markdown.toAttributedString(markdown))
         usageTextView.layoutManager!.ensureLayout(for: usageTextView.textContainer!)
         let usedRect = usageTextView.layoutManager!.usedRect(for: usageTextView.textContainer!)
