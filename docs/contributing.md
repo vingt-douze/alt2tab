@@ -1,4 +1,4 @@
-You can [suggest an enhancement or discuss an issue on github](https://github.com/lwouis/alt-tab-macos/issues), or use the feedback form in the app.
+You can [suggest an enhancement or discuss an issue on github](https://github.com/vingt-douze/alt2tab/issues).
 
 ## Technical overview
 
