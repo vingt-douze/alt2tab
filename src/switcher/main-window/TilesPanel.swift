@@ -26,7 +26,7 @@ class TilesPanel: NSPanel {
         // helps filter out this window from the thumbnails
         setAccessibilitySubrole(.unknown)
         // for VoiceOver
-        setAccessibilityLabel(App.name)
+        setAccessibilityLabel(App.displayName)
         updateAppearance()
         Self.shared = self
     }
