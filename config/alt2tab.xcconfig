@@ -1,0 +1,9 @@
+// alt2tab fork settings. Included as the last line of debug.xcconfig and release.xcconfig (never test-*.xcconfig)
+// so it comes after upstream's own SWIFT_ACTIVE_COMPILATION_CONDITIONS and $(inherited) keeps DEBUG.
+
+SWIFT_ACTIVE_COMPILATION_CONDITIONS = $(inherited) ALT2TAB_FORCE_PRO // LicenseManager.computeState() returns .pro
+
+// Separate identity from upstream AltTab so macOS (TCC permissions, UserDefaults, LaunchServices) treats the fork as its own app.
+PRODUCT_NAME = Alt2Tab
+PRODUCT_BUNDLE_IDENTIFIER = com.vingt-douze.alt2tab
+ALT2TAB_DISPLAY_NAME = Alt²Tab // CFBundleDisplayName; PRODUCT_NAME stays ASCII for the .app/executable name
