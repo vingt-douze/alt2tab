@@ -10,6 +10,7 @@ SWIFT_ACTIVE_COMPILATION_CONDITIONS = $(inherited) ALT2TAB ALT2TAB_FORCE_PRO
 DOMAIN = github.com/vingt-douze/alt2tab
 API_DOMAIN = alt2tab.invalid // RFC 2606 reserved TLD: never resolves
 APPCENTER_SECRET = // empty: AppCenter refuses to start Crashes without a secret; overrides any local.xcconfig value
+SPARKLE_PUBLIC_ED_KEY = // empty: no upstream key in the bundle; Sparkle treats an empty SUPublicEDKey as invalid and refuses to start, so a merge that re-creates the updater fails closed
 
 // Separate identity from upstream AltTab so macOS (TCC permissions, UserDefaults, LaunchServices) treats the fork as its own app.
 PRODUCT_NAME = Alt2Tab
