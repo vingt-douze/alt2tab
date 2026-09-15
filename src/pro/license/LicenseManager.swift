@@ -177,6 +177,9 @@ class LicenseManager {
     }
 
     func computeState() -> LicenseState {
+        #if ALT2TAB_FORCE_PRO
+        return .pro // alt2tab fork: every Pro feature unlocked; no keychain read, no license API call
+        #else
         if keychain.value(account: Self.keychainKeyAccount) != nil {
             let lastValidationResult = defaults.bool(forKey: "lastValidationResult")
             guard lastValidationResult else { return .trialExpired }
@@ -190,6 +193,7 @@ class LicenseManager {
             return .pro
         }
         return computeTrialState()
+        #endif
     }
 
     private func computeTrialState() -> LicenseState {
