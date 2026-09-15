@@ -11,6 +11,18 @@ class App: AppCenterApplication {
     static let bundleIdentifier = Bundle.main.bundleIdentifier!
     static let bundleURL = Bundle.main.bundleURL
     static let name = Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as! String
+    /// Product name as shown to the user ("Alt²Tab"); UI text only. `name` stays the ASCII `CFBundleName` that
+    /// paths, the executable and the launchd plist are built from. An unset xcconfig variable substitutes as "" in
+    /// Info.plist, hence the empty check.
+    static let displayName = (Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String).flatMap { $0.isEmpty ? nil : $0 } ?? name
+
+    /// Swaps the upstream product name in an already-localized UI string for `displayName`. Upstream keys and
+    /// every .lproj keep the ASCII token "AltTab" verbatim, so translations stay untouched and grammatically
+    /// intact. Only for strings where "AltTab" is purely the product name, never for persisted or parsed values.
+    static func rebrand(_ localized: String) -> String {
+        localized.replacingOccurrences(of: "AltTab", with: displayName)
+    }
+
     static let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as! String
     static let licence = Bundle.main.object(forInfoDictionaryKey: "NSHumanReadableCopyright") as! String
     static let repository = "https://github.com/vingt-douze/alt2tab"
