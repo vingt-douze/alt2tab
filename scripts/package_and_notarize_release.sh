@@ -8,7 +8,11 @@ zipName="$APP_NAME-$version.zip"
 oldPwd="$PWD"
 
 cd "$XCODE_BUILD_PATH"
-ditto -c -k --keepParent "$appFile" "$zipName"
+# --sequesterRsrc stores xattrs (e.g. com.apple.provenance) under __MACOSX/ instead of inline
+# ._ AppleDouble entries. Archive Utility can't reapply inline ._ entries to symlinks, so it
+# leaves them on disk in Sparkle.framework's root → "unsealed contents present in the root
+# directory of an embedded framework" after a normal Finder extraction.
+ditto -c -k --sequesterRsrc --keepParent "$appFile" "$zipName"
 
 # request notarization
 requestStatus=$("$oldPwd"/scripts/notarytool submit \
@@ -23,4 +27,4 @@ if [[ $requestStatus != "Accepted" ]]; then exit 1; fi
 
 # staple build
 xcrun stapler staple "$appFile"
-ditto -c -k --keepParent "$appFile" "$zipName"
+ditto -c -k --sequesterRsrc --keepParent "$appFile" "$zipName"
