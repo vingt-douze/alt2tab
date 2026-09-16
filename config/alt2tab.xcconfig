@@ -16,6 +16,8 @@ SPARKLE_PUBLIC_ED_KEY = // empty: no upstream key in the bundle; Sparkle treats 
 PRODUCT_NAME = Alt2Tab
 PRODUCT_BUNDLE_IDENTIFIER = com.vingt-douze.alt2tab
 ALT2TAB_DISPLAY_NAME = Alt²Tab // CFBundleDisplayName; PRODUCT_NAME stays ASCII for the .app/executable name
+ASSETCATALOG_COMPILER_APPICON_NAME = app // resources/icons/app/app.icon (Icon Composer); actool emits Assets.car + a flattened app.icns (macOS < 26) and sets CFBundleIconFile/CFBundleIconName = app in the merged Info.plist
+EXCLUDED_SOURCE_FILE_NAMES = menubar-2.pdf // MenubarIconPreference.colored is compiled out in the fork; keep the upstream asset out of the bundle
 
 // Release signing: overrides release.xcconfig's hard-coded upstream Developer ID; Debug keeps "Local Self-Signed".
 CODE_SIGN_IDENTITY[config=Release] = Developer ID Application

@@ -1,14 +1,18 @@
 enum MenubarIconPreference: CaseIterable, MacroPreference {
     case outlined
     case filled
+    #if !ALT2TAB // alt2tab fork: two template icons only
     case colored
+    #endif
 
     var localizedString: LocalizedString {
         switch self {
             // these spaces are different from each other; they have to be unique
             case .outlined: return " "
             case .filled: return " "
+            #if !ALT2TAB
             case .colored: return " "
+            #endif
         }
     }
 }
