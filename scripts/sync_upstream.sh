@@ -49,9 +49,17 @@ containedInNewTag() {
         && git merge-base --is-ancestor "$1" "$tag"
 }
 
+# The merge commit this run pushed, as recorded in the PR body when it was opened. Empty for a PR
+# opened before the marker existed, and for any body that has lost it.
+recordedHead() {
+    gh pr view "$1" --json body -q .body \
+        | sed -n 's/.*<!-- alt2tab-sync-head: \([0-9a-f]\{7,40\}\) -->.*/\1/p'
+}
+
 # Closes the sync items of older tags that $tag already contains, so only the current one is left
-# to act on. A PR whose tip is no longer the bot's merge commit keeps a resolution in progress and
-# is left open.
+# to act on. A PR whose head no longer matches its recorded merge commit carries work someone added,
+# so it keeps its branch and stays open; an amend keeps the bot as the author, so authorship cannot
+# tell the two apart.
 closeStale() {
     local newUrl="$1" number oldTag
     while IFS=$'\t' read -r number oldTag; do
@@ -61,8 +69,8 @@ closeStale() {
     done <<<"$staleIssues"
     while IFS=$'\t' read -r number oldTag; do
         [[ -n "$number" ]] && containedInNewTag "$oldTag" || continue
-        if [[ "$(gh pr view "$number" --json commits -q '.commits[-1].authors[0].login')" != "github-actions[bot]" ]]; then
-            echo "PR #$number has commits pushed on top of the automated merge. Leaving it open."
+        if [[ "$(recordedHead "$number")" != "$(gh pr view "$number" --json headRefOid -q .headRefOid)" ]]; then
+            echo "PR #$number no longer matches the merge recorded in its body. Leaving it open."
             continue
         fi
         gh pr close "$number" --delete-branch \
@@ -83,6 +91,8 @@ if git merge --no-ff --no-edit -m "chore: merge upstream AltTab $tag" "$tag"; th
         echo "## Release notes"
         echo
         jq -r '.body // "(none)"' <<<"$release"
+        echo
+        echo "<!-- alt2tab-sync-head: $mergeSha -->"
     } >"$body"
     git push --quiet origin "$branch"
     prUrl="$(gh pr create --draft --base "$baseBranch" --head "$branch" --title "$prTitle" --body-file "$body" \
