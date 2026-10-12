@@ -2,6 +2,7 @@
 
 # Detects the latest stable upstream AltTab release and opens a draft PR merging its tag into main.
 # On merge conflict, aborts and opens an issue instead. Never resolves conflicts automatically.
+# Once a replacement exists, closes the sync PRs and issues of older tags the new one already contains.
 # Idempotent: exits without side effects when the tag is already integrated or a PR/issue already exists.
 # Requires: git, gh (authenticated), jq. Run from the repository root.
 
@@ -17,7 +18,7 @@ releaseUrl="$(jq -r .html_url <<<"$release")"
 echo "Latest upstream stable release: $tag"
 
 git fetch --quiet origin "$baseBranch"
-git fetch --quiet "https://github.com/$upstreamRepo.git" "refs/tags/$tag:refs/tags/$tag"
+git fetch --quiet "https://github.com/$upstreamRepo.git" "+refs/tags/$tag:refs/tags/$tag"
 
 if git merge-base --is-ancestor "$tag" "origin/$baseBranch"; then
     echo "$tag is already integrated in $baseBranch. Nothing to do."
@@ -37,6 +38,38 @@ if [[ -n "$(gh issue list --state open --search "\"$issueTitle\" in:title" --jso
     exit 0
 fi
 
+# Collected before the new item exists, so every entry here belongs to an older tag.
+staleIssues="$(gh issue list --state open --search '"requires manual merge" in:title' --json number,title \
+    -q '.[] | select(.title | test("^Upstream AltTab \\S+ requires manual merge$")) | "\(.number)\t\(.title | split(" ")[2])"')"
+stalePrs="$(gh pr list --state open --json number,headRefName \
+    -q '.[] | select(.headRefName | startswith("sync/upstream-")) | "\(.number)\t\(.headRefName | ltrimstr("sync/upstream-"))"')"
+
+containedInNewTag() {
+    git fetch --quiet "https://github.com/$upstreamRepo.git" "+refs/tags/$1:refs/tags/$1" \
+        && git merge-base --is-ancestor "$1" "$tag"
+}
+
+# Closes the sync items of older tags that $tag already contains, so only the current one is left
+# to act on. A PR whose tip is no longer the bot's merge commit keeps a resolution in progress and
+# is left open.
+closeStale() {
+    local newUrl="$1" number oldTag
+    while IFS=$'\t' read -r number oldTag; do
+        [[ -n "$number" ]] && containedInNewTag "$oldTag" || continue
+        gh issue close "$number" --reason "not planned" \
+            --comment "Superseded by $tag, which already contains $oldTag: $newUrl"
+    done <<<"$staleIssues"
+    while IFS=$'\t' read -r number oldTag; do
+        [[ -n "$number" ]] && containedInNewTag "$oldTag" || continue
+        if [[ "$(gh pr view "$number" --json commits -q '.commits[-1].authors[0].login')" != "github-actions[bot]" ]]; then
+            echo "PR #$number has commits pushed on top of the automated merge. Leaving it open."
+            continue
+        fi
+        gh pr close "$number" --delete-branch \
+            --comment "Superseded by $tag, which already contains $oldTag: $newUrl"
+    done <<<"$stalePrs"
+}
+
 git config user.name "github-actions[bot]"
 git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 git checkout --quiet -B "$branch" "origin/$baseBranch"
@@ -51,14 +84,15 @@ if git merge --no-ff --no-edit -m "chore: merge upstream AltTab $tag" "$tag"; th
         jq -r '.body // "(none)"' <<<"$release"
     } >"$body"
     git push --quiet origin "$branch"
-    gh pr create --draft --base "$baseBranch" --head "$branch" --title "$prTitle" --body-file "$body" \
-        --reviewer "$notify" --assignee "$notify"
-    echo "Opened draft PR for $tag."
+    prUrl="$(gh pr create --draft --base "$baseBranch" --head "$branch" --title "$prTitle" --body-file "$body" \
+        --reviewer "$notify" --assignee "$notify")"
+    echo "Opened draft PR for $tag: $prUrl"
     # Lets the caller workflow validate this branch in the same run, which avoids the approval
     # a pull_request run opened by GITHUB_TOKEN would need.
     if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
         echo "branch=$branch" >>"$GITHUB_OUTPUT"
     fi
+    closeStale "$prUrl"
 else
     conflicts="$(git diff --name-only --diff-filter=U)"
     git merge --abort
@@ -71,6 +105,7 @@ else
         echo
         echo "Resolve manually, keeping Alt²Tab specifics (\`ALT2TAB_FORCE_PRO\`, branding, disabled upstream services)."
     } >"$body"
-    gh issue create --title "$issueTitle" --body-file "$body" --assignee "$notify"
-    echo "Merge conflict: opened issue for $tag."
+    issueUrl="$(gh issue create --title "$issueTitle" --body-file "$body" --assignee "$notify")"
+    echo "Merge conflict: opened issue for $tag: $issueUrl"
+    closeStale "$issueUrl"
 fi
