@@ -4,7 +4,10 @@ on:
   # run opened by GITHUB_TOKEN would sit waiting for an "Approve and run" click instead.
   workflow_call:
     inputs:
-      ref:
+      sha:
+        type: string
+        required: true
+      branch:
         type: string
         required: true
   # Covers what the sync bot cannot: commits pushed on top of a sync branch, conflict resolutions included.
@@ -14,9 +17,12 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+  statuses: write # a commit status is how the result reaches the sync PR, which shows no check run otherwise
 # A newer commit on a sync branch makes the run in progress pointless, and a macOS run is slow.
+# Both triggers must land in the same group: ref_name drops the refs/heads/ prefix a push carries,
+# which is the form sync_upstream.sh passes.
 concurrency:
-  group: validate-${{ inputs.ref || github.ref }}
+  group: validate-${{ inputs.branch || github.ref_name }}
   cancel-in-progress: true
 jobs:
   validate:
@@ -24,13 +30,35 @@ jobs:
     # dies there with IBPlatformToolFailureException, under every Xcode the image carries. macOS 26
     # is what the format needs. Xcode stays on upstream's pinned version.
     runs-on: macos-26
+    env:
+      # In a workflow_call run both github.sha and the default checkout are the caller's ref, not the
+      # merge under test. The status has to land on the commit the PR actually points at.
+      SHA: ${{ inputs.sha || github.sha }}
+      GH_TOKEN: ${{ github.token }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
     steps:
+      # First, so a PR shows its check as running rather than unchecked for the whole build.
+      - run: |
+          gh api --silent -X POST "repos/$GITHUB_REPOSITORY/statuses/$SHA" \
+            -f state=pending -f context=validate -f target_url="$RUN_URL" \
+            -f description='Fork invariants, tests and Release build'
       - uses: actions/checkout@v6
         with:
-          ref: ${{ inputs.ref }} # empty outside a workflow_call run, which checks out the event's own ref
+          ref: ${{ inputs.sha || github.sha }}
       - run: sudo xcode-select -s /Applications/Xcode_26.0.1.app/Contents/Developer
       - run: scripts/verify_fork_invariants.sh
       # Ad-hoc signing: a runner has no Developer ID identity, and an unsigned arm64 test host cannot launch.
       - run: set -o pipefail && xcodebuild test -project alt-tab-macos.xcodeproj -scheme Test -configuration Debug CODE_SIGN_IDENTITY=- | scripts/xcbeautify
       # Builds Release too: it is the configuration that ships, and only it compiles the #else of every #if DEBUG.
       - run: set -o pipefail && xcodebuild -project alt-tab-macos.xcodeproj -scheme Release -configuration Release CODE_SIGN_IDENTITY=- OTHER_CODE_SIGN_FLAGS=--timestamp=none | scripts/xcbeautify
+      # always(), cancellation included: a cancelled run must clear its own pending status rather than
+      # leave the PR waiting on a check that will never report.
+      - if: always()
+        run: |
+          case "${{ job.status }}" in
+              success) state=success; text='Fork invariants, tests and Release build passed' ;;
+              failure) state=failure; text='Fork invariants, tests or Release build failed' ;;
+              *) state=error; text='Validation did not finish' ;;
+          esac
+          gh api --silent -X POST "repos/$GITHUB_REPOSITORY/statuses/$SHA" \
+            -f state="$state" -f context=validate -f target_url="$RUN_URL" -f description="$text"

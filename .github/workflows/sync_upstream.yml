@@ -15,6 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       branch: ${{ steps.sync.outputs.branch }}
+      sha: ${{ steps.sync.outputs.sha }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -26,9 +27,11 @@ jobs:
         run: scripts/sync_upstream.sh
   validate:
     needs: sync
-    if: needs.sync.outputs.branch != '' # only a clean merge produces a branch to check
+    if: needs.sync.outputs.sha != '' # only a clean merge produces a commit to check
     permissions:
       contents: read
+      statuses: write # for the result the called workflow posts on that commit
     uses: ./.github/workflows/validate.yml
     with:
-      ref: ${{ needs.sync.outputs.branch }}
+      sha: ${{ needs.sync.outputs.sha }}
+      branch: ${{ needs.sync.outputs.branch }}

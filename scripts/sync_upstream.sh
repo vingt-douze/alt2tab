@@ -76,6 +76,7 @@ git checkout --quiet -B "$branch" "origin/$baseBranch"
 
 body="$(mktemp)"
 if git merge --no-ff --no-edit -m "chore: merge upstream AltTab $tag" "$tag"; then
+    mergeSha="$(git rev-parse HEAD)"
     {
         echo "Upstream release: $releaseUrl"
         echo
@@ -87,10 +88,14 @@ if git merge --no-ff --no-edit -m "chore: merge upstream AltTab $tag" "$tag"; th
     prUrl="$(gh pr create --draft --base "$baseBranch" --head "$branch" --title "$prTitle" --body-file "$body" \
         --reviewer "$notify" --assignee "$notify")"
     echo "Opened draft PR for $tag: $prUrl"
-    # Lets the caller workflow validate this branch in the same run, which avoids the approval
-    # a pull_request run opened by GITHUB_TOKEN would need.
+    # Lets the caller workflow validate this merge in the same run, which avoids the approval
+    # a pull_request run opened by GITHUB_TOKEN would need. The sha is what the validation checks out
+    # and reports its status on; the branch only groups the runs that supersede each other.
     if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
-        echo "branch=$branch" >>"$GITHUB_OUTPUT"
+        {
+            echo "branch=$branch"
+            echo "sha=$mergeSha"
+        } >>"$GITHUB_OUTPUT"
     fi
     closeStale "$prUrl"
 else
