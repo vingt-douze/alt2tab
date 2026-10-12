@@ -54,6 +54,11 @@ if git merge --no-ff --no-edit -m "chore: merge upstream AltTab $tag" "$tag"; th
     gh pr create --draft --base "$baseBranch" --head "$branch" --title "$prTitle" --body-file "$body" \
         --reviewer "$notify" --assignee "$notify"
     echo "Opened draft PR for $tag."
+    # Lets the caller workflow validate this branch in the same run, which avoids the approval
+    # a pull_request run opened by GITHUB_TOKEN would need.
+    if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
+        echo "branch=$branch" >>"$GITHUB_OUTPUT"
+    fi
 else
     conflicts="$(git diff --name-only --diff-filter=U)"
     git merge --abort

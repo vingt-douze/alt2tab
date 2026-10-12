@@ -1,0 +1,29 @@
+name: Validate Alt²Tab
+on:
+  # Called by sync_upstream.yml so the automated merge is checked in the same run: a pull_request
+  # run opened by GITHUB_TOKEN would sit waiting for an "Approve and run" click instead.
+  workflow_call:
+    inputs:
+      ref:
+        type: string
+        required: true
+  # Covers what the sync bot cannot: commits pushed on top of a sync branch, conflict resolutions included.
+  push:
+    branches:
+      - 'sync/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: macos-15 # same image and Xcode as upstream's own ci_cd.yml
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.ref }} # empty outside a workflow_call run, which checks out the event's own ref
+      - run: sudo xcode-select -s /Applications/Xcode_26.0.1.app/Contents/Developer
+      - run: scripts/verify_fork_invariants.sh
+      # Ad-hoc signing: a runner has no Developer ID identity, and an unsigned arm64 test host cannot launch.
+      - run: set -o pipefail && xcodebuild test -project alt-tab-macos.xcodeproj -scheme Test -configuration Debug CODE_SIGN_IDENTITY=- | scripts/xcbeautify
+      # Builds Release too: it is the configuration that ships, and only it compiles the #else of every #if DEBUG.
+      - run: set -o pipefail && xcodebuild -project alt-tab-macos.xcodeproj -scheme Release -configuration Release CODE_SIGN_IDENTITY=- OTHER_CODE_SIGN_FLAGS=--timestamp=none | scripts/xcbeautify

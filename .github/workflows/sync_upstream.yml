@@ -13,11 +13,22 @@ concurrency:
 jobs:
   sync:
     runs-on: ubuntu-latest
+    outputs:
+      branch: ${{ steps.sync.outputs.branch }}
     steps:
       - uses: actions/checkout@v6
         with:
           ref: main
           fetch-depth: 0
-      - env:
+      - id: sync
+        env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: scripts/sync_upstream.sh
+  validate:
+    needs: sync
+    if: needs.sync.outputs.branch != '' # only a clean merge produces a branch to check
+    permissions:
+      contents: read
+    uses: ./.github/workflows/validate.yml
+    with:
+      ref: ${{ needs.sync.outputs.branch }}
