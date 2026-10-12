@@ -61,7 +61,7 @@ recordedHead() {
 # so it keeps its branch and stays open; an amend keeps the bot as the author, so authorship cannot
 # tell the two apart.
 closeStale() {
-    local newUrl="$1" number oldTag
+    local newUrl="$1" number oldTag recorded head
     while IFS=$'\t' read -r number oldTag; do
         [[ -n "$number" ]] && containedInNewTag "$oldTag" || continue
         gh issue close "$number" --reason "not planned" \
@@ -69,8 +69,12 @@ closeStale() {
     done <<<"$staleIssues"
     while IFS=$'\t' read -r number oldTag; do
         [[ -n "$number" ]] && containedInNewTag "$oldTag" || continue
-        if [[ "$(recordedHead "$number")" != "$(gh pr view "$number" --json headRefOid -q .headRefOid)" ]]; then
-            echo "PR #$number no longer matches the merge recorded in its body. Leaving it open."
+        recorded="$(recordedHead "$number" || true)"
+        head="$(gh pr view "$number" --json headRefOid -q .headRefOid || true)"
+        # Closing requires positive proof, so an empty read counts as a mismatch: when both reads fail,
+        # comparing '' with '' would otherwise read as a match and take someone's branch away.
+        if [[ -z "$recorded" || -z "$head" || "$recorded" != "$head" ]]; then
+            echo "PR #$number is not provably the untouched bot merge. Leaving it open."
             continue
         fi
         gh pr close "$number" --delete-branch \
