@@ -14,9 +14,16 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+# A newer commit on a sync branch makes the run in progress pointless, and a macOS run is slow.
+concurrency:
+  group: validate-${{ inputs.ref || github.ref }}
+  cancel-in-progress: true
 jobs:
   validate:
-    runs-on: macos-15 # same image and Xcode as upstream's own ci_cd.yml
+    # Not upstream's macos-15: the agent that renders resources/icons/app/app.icon (Icon Composer)
+    # dies there with IBPlatformToolFailureException, under every Xcode the image carries. macOS 26
+    # is what the format needs. Xcode stays on upstream's pinned version.
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v6
         with:
