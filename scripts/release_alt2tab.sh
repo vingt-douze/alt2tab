@@ -5,7 +5,7 @@
 # Requires: Xcode, gh (authenticated), a "Developer ID Application" identity in the keychain,
 # and a notarytool keychain profile named "alt2tab" (xcrun notarytool store-credentials alt2tab --team-id <TEAM_ID>).
 
-set -eu
+set -euo pipefail
 
 version="${1:?usage: $0 <version>}"
 [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "Invalid version: $version" >&2; exit 1; }
