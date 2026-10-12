@@ -33,3 +33,10 @@ A wrong comment costs several times more than a missing one, for humans and agen
 # Code-signing identity invariant
 - The app's Developer ID, Team ID, and bundle ID must remain stable across public Alt²Tab releases. macOS ties application identity and TCC permissions (Accessibility, Screen Recording) to the code-signing identity; changing any of these makes every user re-grant permissions.
 - Alt²Tab does not use the upstream license/keychain activation flow: `ALT2TAB_FORCE_PRO` forces the Pro state at build time, so no license key is stored in the Keychain and no license API is contacted.
+
+# Upstream sync automation
+- `.github/workflows/sync_upstream.yml` runs daily: `scripts/sync_upstream.sh` merges the latest stable upstream tag into `sync/upstream-<tag>` and opens a draft PR, or opens an issue when the merge conflicts. It never resolves a conflict. Once the replacement exists it closes the sync items of the older tags the new one contains, keeping any PR that has commits pushed on top of the bot's merge.
+- `.github/workflows/validate.yml` checks a sync branch: fork invariants, the test suite, then a Release build. `sync_upstream.yml` calls it in the same run, because a `pull_request` run opened by `GITHUB_TOKEN` waits for an "Approve and run" click. A push to `sync/**` triggers it too, so a conflict resolution gets checked as well.
+- It runs the tests in Debug, not the Release config of `scripts/run_tests.sh`: Debug is the `Test` scheme's own TestAction, it keeps the `#if DEBUG` tests Release drops, and it avoids Release's Developer ID requirement. `CODE_SIGN_IDENTITY=-` signs every target ad-hoc, which needs no certificate and still produces the launchable arm64 test host that a runner requires.
+- `scripts/verify_fork_invariants.sh` reads the resolved Release build settings, so it catches a merge that drops `ALT2TAB_FORCE_PRO`, changes the bundle identity, or re-introduces an upstream secret. The test targets cannot cover this: they never include `config/alt2tab.xcconfig`.
+- Releases stay manual: `scripts/release_alt2tab.sh <version>` from a clean `main`.
