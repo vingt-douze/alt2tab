@@ -36,9 +36,14 @@ for secret in APPCENTER_SECRET SPARKLE_PUBLIC_ED_KEY; do
     [[ -z "$(setting "$secret")" ]] || fail "$secret is not empty"
 done
 
-# The build setting alone does not prove the flag is still read; the early return is the unlock.
-grep -qE '#if +ALT2TAB_FORCE_PRO *$' src/pro/license/LicenseManager.swift \
-    || fail "LicenseManager.swift no longer guards computeState() with ALT2TAB_FORCE_PRO"
+# The build setting alone does not prove the flag is still read, and the flag appearing somewhere in
+# the file proves nothing either: the unlock is this exact early return, first in computeState().
+# Reads the two first non-empty lines of the body, whitespace-collapsed, so only the shape is pinned.
+guard="$(awk '/func computeState\(\) -> LicenseState \{/ {body = 1; next}
+              body && NF {print; if (++lines == 2) exit}' src/pro/license/LicenseManager.swift \
+    | tr -s ' \t\n' ' ')"
+[[ "${guard# }" == '#if ALT2TAB_FORCE_PRO return .pro '* ]] \
+    || fail "computeState() no longer starts with '#if ALT2TAB_FORCE_PRO / return .pro' but with: ${guard# }"
 
 if [[ $status -ne 0 ]]; then
     exit 1
