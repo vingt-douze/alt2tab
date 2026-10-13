@@ -30,7 +30,7 @@ class GeneralTab {
             rightViews: [crashPolicyDropdown!])
         #endif
         for i in 0..<MenubarIconPreference.allCases.count {
-            let image = NSImage.initCopy("menubar-\(i)")
+            let image = NSImage.initCopy(menubarIconAssetName(i))
             image.isTemplate = MenubarIconPreference.allCases[i].isTemplate
             image.size = NSSize(width: 22, height: 22)
             menubarIconDropdown!.item(at: i)!.image = image

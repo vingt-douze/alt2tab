@@ -1,3 +1,7 @@
+#if ALT2TAB // alt2tab fork: our own icon set, at the end of this file. Wrapping upstream's enum
+// rather than editing it leaves their cases, their numbering and their assets untouched.
+typealias MenubarIconPreference = Alt2TabMenubarIconPreference
+#else
 enum MenubarIconPreference: CaseIterable, MacroPreference {
     // Persisted indices and menubar-N.pdf assets share this order; preserve it across icon redesigns.
     case outlined
@@ -6,18 +10,8 @@ enum MenubarIconPreference: CaseIterable, MacroPreference {
     case legacyOutlined
     case legacyFilled
     case legacyColored
-    #if ALT2TAB // alt2tab fork: appended, so upstream's cases keep their indices and their assets
-    case alt2tabOutlined
-    case alt2tabFilled
-    #endif
 
     var isTemplate: Bool { self != .colored && self != .legacyColored }
-
-    #if ALT2TAB
-    static let defaultChoice = Self.alt2tabOutlined
-    #else
-    static let defaultChoice = Self.outlined
-    #endif
 
     var localizedString: LocalizedString {
         switch self {
@@ -28,13 +22,10 @@ enum MenubarIconPreference: CaseIterable, MacroPreference {
             case .legacyOutlined: return "  "
             case .legacyFilled: return "  "
             case .legacyColored: return "  "
-            #if ALT2TAB
-            case .alt2tabOutlined: return "   "
-            case .alt2tabFilled: return "   "
-            #endif
         }
     }
 }
+#endif
 
 enum GesturePreference: CaseIterable, MacroPreference {
     case disabled
@@ -474,3 +465,31 @@ struct WidthHeightImage {
 }
 
 typealias LocalizedString = String
+
+#if ALT2TAB
+// alt2tab fork: the fork's icons are the only ones it offers. They live in `alt2tab-menubar-N.pdf`,
+// a name upstream never uses, so an icon they add or redesign cannot collide with ours.
+enum Alt2TabMenubarIconPreference: CaseIterable, MacroPreference {
+    case outlined
+    case filled
+
+    var isTemplate: Bool { true }
+
+    var localizedString: LocalizedString {
+        switch self {
+            // NSPopUpButton requires unique titles, including the image-only choices.
+            case .outlined: return "\u{20}"
+            case .filled: return "\u{2009}"
+        }
+    }
+}
+#endif
+
+// alt2tab fork: see `Alt2TabMenubarIconPreference` for why the fork's assets have their own name.
+func menubarIconAssetName(_ index: Int) -> String {
+    #if ALT2TAB
+    return "alt2tab-menubar-\(index)"
+    #else
+    return "menubar-\(index)"
+    #endif
+}

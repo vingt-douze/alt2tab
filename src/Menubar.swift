@@ -212,8 +212,8 @@ class Menubar {
     private static let iconSize = CGFloat(22)
 
     static private func loadPreferredIcon() {
-        let i = Preferences.menubarIcon.indexAsString
-        let image = NSImage(named: "menubar-\(i)")!
+        let i = Preferences.menubarIcon.index
+        let image = NSImage(named: menubarIconAssetName(i))!
         image.isTemplate = Preferences.menubarIcon.isTemplate
         image.size = NSSize(width: iconSize, height: iconSize)
         statusItem.button!.image = image

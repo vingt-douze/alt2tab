@@ -475,8 +475,8 @@
 		AD0500000000000000000103 /* menubar-3.pdf in Resources */ = {isa = PBXBuildFile; fileRef = AD0500000000000000000003 /* menubar-3.pdf */; };
 		AD0500000000000000000104 /* menubar-4.pdf in Resources */ = {isa = PBXBuildFile; fileRef = AD0500000000000000000004 /* menubar-4.pdf */; };
 		AD0500000000000000000105 /* menubar-5.pdf in Resources */ = {isa = PBXBuildFile; fileRef = AD0500000000000000000005 /* menubar-5.pdf */; };
-		A127AB000000000000000106 /* menubar-6.pdf in Resources */ = {isa = PBXBuildFile; fileRef = A127AB000000000000000006 /* menubar-6.pdf */; };
-		A127AB000000000000000107 /* menubar-7.pdf in Resources */ = {isa = PBXBuildFile; fileRef = A127AB000000000000000007 /* menubar-7.pdf */; };
+		A127AB000000000000000106 /* alt2tab-menubar-0.pdf in Resources */ = {isa = PBXBuildFile; fileRef = A127AB000000000000000006 /* alt2tab-menubar-0.pdf */; };
+		A127AB000000000000000107 /* alt2tab-menubar-1.pdf in Resources */ = {isa = PBXBuildFile; fileRef = A127AB000000000000000007 /* alt2tab-menubar-1.pdf */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -950,8 +950,8 @@
 		AD0500000000000000000003 /* menubar-3.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = "menubar-3.pdf"; sourceTree = "<group>"; };
 		AD0500000000000000000004 /* menubar-4.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = "menubar-4.pdf"; sourceTree = "<group>"; };
 		AD0500000000000000000005 /* menubar-5.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = "menubar-5.pdf"; sourceTree = "<group>"; };
-		A127AB000000000000000006 /* menubar-6.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = "menubar-6.pdf"; sourceTree = "<group>"; };
-		A127AB000000000000000007 /* menubar-7.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = "menubar-7.pdf"; sourceTree = "<group>"; };
+		A127AB000000000000000006 /* alt2tab-menubar-0.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = "alt2tab-menubar-0.pdf"; sourceTree = "<group>"; };
+		A127AB000000000000000007 /* alt2tab-menubar-1.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = "alt2tab-menubar-1.pdf"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -1289,8 +1289,8 @@
 				AD0500000000000000000003 /* menubar-3.pdf */,
 				AD0500000000000000000004 /* menubar-4.pdf */,
 				AD0500000000000000000005 /* menubar-5.pdf */,
-				A127AB000000000000000006 /* menubar-6.pdf */,
-				A127AB000000000000000007 /* menubar-7.pdf */,
+				A127AB000000000000000006 /* alt2tab-menubar-0.pdf */,
+				A127AB000000000000000007 /* alt2tab-menubar-1.pdf */,
 			);
 			path = menubar;
 			sourceTree = "<group>";
@@ -2155,8 +2155,8 @@
 				AD0500000000000000000103 /* menubar-3.pdf in Resources */,
 				AD0500000000000000000104 /* menubar-4.pdf in Resources */,
 				AD0500000000000000000105 /* menubar-5.pdf in Resources */,
-				A127AB000000000000000106 /* menubar-6.pdf in Resources */,
-				A127AB000000000000000107 /* menubar-7.pdf in Resources */,
+				A127AB000000000000000106 /* alt2tab-menubar-0.pdf in Resources */,
+				A127AB000000000000000107 /* alt2tab-menubar-1.pdf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

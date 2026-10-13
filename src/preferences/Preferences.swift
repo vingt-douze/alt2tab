@@ -32,7 +32,7 @@ class Preferences {
             "fadeOutAnimation": "false",
             "previewFadeInAnimation": "true",
             "startAtLogin": "true",
-            "menubarIcon": MenubarIconPreference.defaultChoice.indexAsString,
+            "menubarIcon": MenubarIconPreference.outlined.indexAsString,
             "menubarIconShown": "true",
             "language": LanguagePreference.systemDefault.indexAsString,
             "exceptions": defaultExceptions(),
