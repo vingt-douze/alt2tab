@@ -14,6 +14,7 @@ final class SwitcherSession {
     static var activeShortcutIndex: Int { current?.shortcutIndex ?? 0 }
 
     var shortcutIndex: Int = 0
+    let searchDiscovery = SearchDiscoveryPolicy.Opportunity()
     var isFirstSummon: Bool = true
     var forceDoNothingOnRelease: Bool = false
 
@@ -54,6 +55,7 @@ final class SwitcherSession {
     var removalFallback: SelectionRemovalFallback?
 
     func performUserSelection(_ update: () -> Void) {
+        searchDiscovery.lastNavigationAt = ProcessInfo.processInfo.systemUptime
         userPickedSelection = true
         update()
     }
@@ -76,6 +78,12 @@ final class SwitcherSession {
     /// Keeps one-per-app tiles from changing identity while discovery, grouping and search settle.
     var representativeByPid = [pid_t: String]()
     var searchQuery: String = ""
+    /// Where the pointer was at the press, in Quartz coordinates. The cursor scopes filter against it for the
+    /// whole session: read again at a repaint, it would follow the pointer onto the switcher's own tiles.
+    let cursorAtSummon = CGEvent(source: nil)?.location
+    /// What `Windows.pidUnderCursor` found at `cursorAtSummon`: `nil` until a shortcut scoped to the app
+    /// under the cursor first asks, `.some(nil)` when no window was drawn there.
+    var pidUnderCursorAtSummon: pid_t??
 
     /// Full-resolution frames for the Preview panel, fetched just-in-time for the selected window and
     /// its cycling neighbors (`WindowThumbnails.fetchPreviewFrames`, #5861). Living on the session, they

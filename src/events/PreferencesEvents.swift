@@ -48,13 +48,13 @@ class PreferencesEvents {
         #endif
         ControlsTab.initializePreferencesDependentState()
         #if DEBUG
-        if !Preferences.qaPristine { applyUpdatePolicyPreference() }
+        if !Preferences.qaPristine && !QaLifecycle.enabled { applyUpdatePolicyPreference() }
         #else
         applyUpdatePolicyPreference()
         #endif
         TrackpadEvents.toggle(Preferences.nextWindowGesture != .disabled)
         #if DEBUG
-        guard !Preferences.qaPristine else { return }
+        guard !Preferences.qaPristine && !QaLifecycle.enabled else { return }
         #endif
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
             LoginItem.applyCurrentPreference()
@@ -73,6 +73,7 @@ class PreferencesEvents {
         if LicenseManager.shared.isProLocked && ProFeature.isStoredValuePro(preferenceKey: key) {
             UpgradeTab.navigateToUpgradeTab()
         }
+        SearchDiscoveryHint.shared.cancel()
         ControlsTab.preferenceChanged(key)
         switch key {
         case "menubarIcon", "menubarIconShown": applyMenubarPreferencesIfReady()

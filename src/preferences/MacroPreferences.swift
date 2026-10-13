@@ -1,21 +1,31 @@
+#if ALT2TAB // alt2tab fork: our own icon set, at the end of this file. Wrapping upstream's enum
+// rather than editing it leaves their cases, their numbering and their assets untouched.
+typealias MenubarIconPreference = Alt2TabMenubarIconPreference
+#else
 enum MenubarIconPreference: CaseIterable, MacroPreference {
+    // Persisted indices and menubar-N.pdf assets share this order; preserve it across icon redesigns.
     case outlined
     case filled
-    #if !ALT2TAB // alt2tab fork: two template icons only
     case colored
-    #endif
+    case legacyOutlined
+    case legacyFilled
+    case legacyColored
+
+    var isTemplate: Bool { self != .colored && self != .legacyColored }
 
     var localizedString: LocalizedString {
         switch self {
-            // these spaces are different from each other; they have to be unique
+            // NSPopUpButton requires unique titles, including the image-only choices.
             case .outlined: return " "
             case .filled: return " "
-            #if !ALT2TAB
             case .colored: return " "
-            #endif
+            case .legacyOutlined: return "  "
+            case .legacyFilled: return "  "
+            case .legacyColored: return "  "
         }
     }
 }
+#endif
 
 enum GesturePreference: CaseIterable, MacroPreference {
     case disabled
@@ -167,12 +177,16 @@ enum AppsToShowPreference: CaseIterable, MacroPreference {
     case all
     case active
     case nonActive
+    case underCursor
+    case appUnderCursor
 
     var localizedString: LocalizedString {
         switch self {
             case .all: return NSLocalizedString("All apps", comment: "")
             case .active: return NSLocalizedString("Active app", comment: "")
             case .nonActive: return NSLocalizedString("Non-active apps", comment: "")
+            case .underCursor: return NSLocalizedString("Windows under the cursor", comment: "")
+            case .appUnderCursor: return NSLocalizedString("App under the cursor", comment: "")
         }
     }
 }
@@ -451,3 +465,31 @@ struct WidthHeightImage {
 }
 
 typealias LocalizedString = String
+
+#if ALT2TAB
+// alt2tab fork: the fork's icons are the only ones it offers. They live in `alt2tab-menubar-N.pdf`,
+// a name upstream never uses, so an icon they add or redesign cannot collide with ours.
+enum Alt2TabMenubarIconPreference: CaseIterable, MacroPreference {
+    case outlined
+    case filled
+
+    var isTemplate: Bool { true }
+
+    var localizedString: LocalizedString {
+        switch self {
+            // NSPopUpButton requires unique titles, including the image-only choices.
+            case .outlined: return "\u{20}"
+            case .filled: return "\u{2009}"
+        }
+    }
+}
+#endif
+
+// alt2tab fork: see `Alt2TabMenubarIconPreference` for why the fork's assets have their own name.
+func menubarIconAssetName(_ index: Int) -> String {
+    #if ALT2TAB
+    return "alt2tab-menubar-\(index)"
+    #else
+    return "menubar-\(index)"
+    #endif
+}

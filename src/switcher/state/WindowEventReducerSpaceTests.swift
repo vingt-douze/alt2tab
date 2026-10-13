@@ -68,10 +68,22 @@ final class WindowEventReducerSpaceTests: XCTestCase {
         XCTAssertTrue(effects.contains(.refreshSpacesTopologyAndSync))
         XCTAssertTrue(effects.contains(.queryWindowServerState(wids: [Self.widA, Self.widB])))
         XCTAssertTrue(effects.contains(.checkShortcutsForFocusedWindow))
-        XCTAssertTrue(effects.contains(.refreshUi(wids: [Self.widA, Self.widB], onlyWhileSwitcherOpen: false)))
+        XCTAssertTrue(effects.contains { if case .refreshUi = $0 { return true } else { return false } })
         XCTAssertFalse(effects.contains(.refreshSpacesTopology),
                        "the settled pass owns the full refresh; emitting the leading edge's cheap read too "
                        + "would re-read the topology twice for nothing")
+    }
+
+    /// Every capture costs the OS's permission service three signature validations, and recapturing every
+    /// window on every Space switch was enough to exhaust it on a busy desktop (#6067). Only the arriving
+    /// Space's windows are recaptured; a window on a Space that is not on screen keeps its thumbnail.
+    func testSpaceChangeSettledRecapturesOnlyWindowsOnVisibleSpaces() {
+        var s = state()
+        let effects = WindowEventReducer.reduce(&s, .spaceChangeSettled)
+        XCTAssertTrue(effects.contains(.refreshUi(wids: [Self.widA], onlyWhileSwitcherOpen: false)),
+                      "widA is on the visible Space 1, so the switch should recapture it")
+        XCTAssertFalse(effects.contains(.refreshUi(wids: [Self.widA, Self.widB], onlyWhileSwitcherOpen: false)),
+                       "widB is on Space 2, which is not on screen: recapturing it costs the OS for nothing")
     }
 
     // MARK: - C. The Spaces answer applies only to the windows it was asked about
@@ -190,5 +202,44 @@ final class WindowEventReducerSpaceTests: XCTestCase {
         XCTAssertEqual(first, second)
         XCTAssertEqual(s.windows, snapshot)
         XCTAssertEqual(s.currentSpaceId, 1)
+    }
+
+    // MARK: - G. A window admitted on attention learns its Space when its discovery lands
+
+    private func discoveryLanded(_ wid: CGWindowID, spaceIds: [UInt64]) -> ReducerInput {
+        .discoveryLanded(wid: wid, accepted: true, newlyTracked: false, adoptedAsInactiveTab: false,
+                         spaceMembership: .known(spaceIds), isOrderedIn: true, tabGroup: .standalone)
+    }
+
+    /// Without the membership, the app confirming the close is read as out of scope and the window is kept.
+    func testAWindowAdmittedOnAttentionLearnsItsSpaceWhenDiscoveryLands() {
+        var s = state()
+        _ = WindowEventReducer.reduce(&s, discoveryLanded(Self.widA, spaceIds: [1]))
+        XCTAssertEqual(s.window(Self.widA)?.spaceMembershipObservation, .known([1]))
+    }
+
+    func testALaterDiscoveryDoesNotOverwriteAnObservedMembership() {
+        var s = state()
+        s.windows[1].spaceMembershipObservation = .known([2])
+        _ = WindowEventReducer.reduce(&s, discoveryLanded(Self.widB, spaceIds: [1]))
+        XCTAssertEqual(s.window(Self.widB)?.spaceMembershipObservation, .known([2]))
+        XCTAssertEqual(s.window(Self.widB)?.spaceIds, [2])
+    }
+
+    // MARK: - H. A window discovered with no frame asks the WindowServer for one
+
+    /// A window created at 0x0 and sized a millisecond later: the resize arrived while it was untracked,
+    /// nothing re-read the frame, and the tile kept a 0x0 window whose capture never matched it.
+    func testADiscoveryWithNoFrameAsksTheWindowServerForOne() {
+        var s = state()
+        s.windows[0].size = CGSize(width: 0, height: 0)
+        let effects = WindowEventReducer.reduce(&s, discoveryLanded(Self.widA, spaceIds: [1]))
+        XCTAssertTrue(effects.contains(.queryWindowServerState(wids: [Self.widA])))
+    }
+
+    func testADiscoveryWithAFrameAsksNothingMore() {
+        var s = state()
+        let effects = WindowEventReducer.reduce(&s, discoveryLanded(Self.widA, spaceIds: [1]))
+        XCTAssertFalse(effects.contains(.queryWindowServerState(wids: [Self.widA])))
     }
 }

@@ -32,10 +32,14 @@ class TilesView {
         configureSearchField()
         configureNoWindowLabel()
         updateBackgroundView()
-        // TODO: think about this optimization more
-        (1...20).forEach { _ in TilesView.recycledViews.append(TileView()) }
-        Self.updateCachedSizes()
         initialized = true
+        growPoolToCoverWindows()
+        Self.updateCachedSizes()
+    }
+
+    static func growPoolToCoverWindows() {
+        let count = TilePool.tilesToAdd(poolSize: recycledViews.count, windowCount: Windows.list.count, uiIsBuilt: initialized)
+        (0..<count).forEach { _ in recycledViews.append(TileView()) }
     }
 
     static var isSearchModeOn: Bool { searchMode != .off }
@@ -63,9 +67,12 @@ class TilesView {
     /// returned only by timing out after 3.0s, and the whole dismissal sat behind it (#5981). Callers run it
     /// last, behind whatever the user is actually waiting for: the panel hiding, or the re-layout that puts
     /// the unfiltered list back.
-    private static func takeTheCaretFromTheField() {
+    /// `focusingSelectedTile` moves the tile focus into the same deferred turn: handing first responder to the
+    /// tile resigns the field just the same.
+    private static func takeTheCaretFromTheField(focusingSelectedTile: Bool = false) {
         DispatchQueue.main.async {
             guard searchMode == .off else { return } // search restarted meanwhile and owns the field now
+            if focusingSelectedTile && SwitcherSession.current != nil { focusSelectedTileIfPossible() }
             searchField.stringValue = ""
             updateSearchFieldEditability()
         }
@@ -86,8 +93,7 @@ class TilesView {
         clearHover()
         Windows.updateSearchQuery("")
         App.refreshUi(true)
-        focusSelectedTileIfPossible()
-        takeTheCaretFromTheField()
+        takeTheCaretFromTheField(focusingSelectedTile: true)
     }
 
     static func enableSearchEditing() {
@@ -96,6 +102,7 @@ class TilesView {
             case .placeCaretOnly:
                 giveTheFieldTheCaret()
             case .enterEditing:
+                SearchDiscoveryHint.shared.cancel()
                 searchMode = .editing
                 updateSearchFieldEditability()
                 SwitcherSession.current?.forceDoNothingOnRelease = true
