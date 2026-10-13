@@ -6,10 +6,14 @@ The fork exists to provide the AltTab experience with all currently integrated f
 
 ## Status
 
-- Not yet publicly released.
+- Published as notarized releases: <https://github.com/vingt-douze/alt2tab/releases>.
 - No automatic updater: Sparkle is never started and no update feed is configured.
 - No upstream license server dependency: all features are unlocked at build time; the app never contacts a license API.
 - No AppCenter crash reporting: the SDK is never started and no secret is embedded.
+
+## Versioning
+
+Releases are numbered `<upstream version>.<fork revision>`, following the same order as a Debian or RPM package revision. The leading numbers are the upstream AltTab version that release merges; the last one counts the Alt²Tab releases built on it. `11.9.1.1` is the first Alt²Tab release based on upstream `v11.9.1`, a second one on that same upstream is `11.9.1.2`, and the first release on upstream `v11.10.0` is `11.10.0.1`. Keeping the upstream version first is what makes the numbering always increase.
 
 ## Build
 
