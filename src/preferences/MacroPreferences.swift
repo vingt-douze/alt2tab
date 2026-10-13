@@ -1,17 +1,36 @@
 enum MenubarIconPreference: CaseIterable, MacroPreference {
+    // Persisted indices and menubar-N.pdf assets share this order; preserve it across icon redesigns.
     case outlined
     case filled
-    #if !ALT2TAB // alt2tab fork: two template icons only
     case colored
+    case legacyOutlined
+    case legacyFilled
+    case legacyColored
+    #if ALT2TAB // alt2tab fork: appended, so upstream's cases keep their indices and their assets
+    case alt2tabOutlined
+    case alt2tabFilled
+    #endif
+
+    var isTemplate: Bool { self != .colored && self != .legacyColored }
+
+    #if ALT2TAB
+    static let defaultChoice = Self.alt2tabOutlined
+    #else
+    static let defaultChoice = Self.outlined
     #endif
 
     var localizedString: LocalizedString {
         switch self {
-            // these spaces are different from each other; they have to be unique
+            // NSPopUpButton requires unique titles, including the image-only choices.
             case .outlined: return " "
             case .filled: return " "
-            #if !ALT2TAB
             case .colored: return " "
+            case .legacyOutlined: return "  "
+            case .legacyFilled: return "  "
+            case .legacyColored: return "  "
+            #if ALT2TAB
+            case .alt2tabOutlined: return "   "
+            case .alt2tabFilled: return "   "
             #endif
         }
     }
@@ -167,12 +186,16 @@ enum AppsToShowPreference: CaseIterable, MacroPreference {
     case all
     case active
     case nonActive
+    case underCursor
+    case appUnderCursor
 
     var localizedString: LocalizedString {
         switch self {
             case .all: return NSLocalizedString("All apps", comment: "")
             case .active: return NSLocalizedString("Active app", comment: "")
             case .nonActive: return NSLocalizedString("Non-active apps", comment: "")
+            case .underCursor: return NSLocalizedString("Windows under the cursor", comment: "")
+            case .appUnderCursor: return NSLocalizedString("App under the cursor", comment: "")
         }
     }
 }

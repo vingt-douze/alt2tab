@@ -48,6 +48,11 @@ re-order under them. It looks free and it is not.
 - **testSpaceChangeSettledKeepsMembershipAndTheStateRequery** — `.spaceChangeSettled` still emits the
   per-window Space sync, the WindowServer state re-query for every tracked window, the shortcut re-check and
   the repaint. Collapsing the two branches into one would either run this storm-time work early or lose it.
+- **testSpaceChangeSettledRecapturesOnlyWindowsOnVisibleSpaces** — the repaint asks to recapture only the
+  windows on a Space now on screen. Each capture costs the OS three signature validations in its permission
+  service, and recapturing every window on every switch was enough to exhaust it on a busy desktop and make
+  macOS ask for Screen Recording again (#6067). Windows elsewhere keep their thumbnail until focused or until
+  the switcher opens.
 
 ### C. Scope and completion are separate facts
 
@@ -114,3 +119,27 @@ Space queries run on a concurrent lane. Each receives a `QueryIssueOrder` token 
 the newest issued answer may replace `Spaces` topology. A response cannot become newer merely by reaching
 main last. `TrackingTypesTests.testSnapshotAnswersOnlyApplyForTheNewestIssue` pins the fence itself; every
 reactive topology read advances it, including the leading edge of a later Space transition.
+
+### G. A window admitted on attention learns its Space when its discovery lands
+
+Exact attention (a click, AltTab's own target, an app's focus notification) can admit a window from its
+WindowServer row before AX discovery describes it. That discovery then lands for a window that is already
+tracked, so it is not `newlyTracked`, and the membership it read was dropped. The window kept
+`.unavailable`, which the app-side close check reads as "outside the query's scope": a window the app had
+already confirmed closed stayed in the switcher until the WindowServer retired its surface. A macOS 26 Finder
+window opened and closed within a few seconds kept its surface for more than 30s (measured 2026-10-04).
+
+- **testAWindowAdmittedOnAttentionLearnsItsSpaceWhenDiscoveryLands** — the landing records the Space it read
+  for a window whose membership was never observed.
+- **testALaterDiscoveryDoesNotOverwriteAnObservedMembership** — a window whose membership is already known
+  keeps it: live Space events are newer than the discovery's read.
+
+### H. A window discovered with no frame asks the WindowServer for one
+
+An app can create a window at 0x0 and size it a millisecond later. The resize then reaches AltTab while
+the window is still untracked, and nothing re-reads the frame afterwards: the window kept 0x0, and its
+capture never matched it (macOS 26, 2026-10-05).
+
+- **testADiscoveryWithNoFrameAsksTheWindowServerForOne** — a landing with a zero-size frame queries the
+  WindowServer for that window.
+- **testADiscoveryWithAFrameAsksNothingMore** — a landing with a real frame adds no query.
