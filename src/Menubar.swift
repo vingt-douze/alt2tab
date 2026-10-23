@@ -44,7 +44,7 @@ class Menubar {
         menu.addItem(NSMenuItem.separator())
         addMenuItem(String(format: NSLocalizedString("About %@", comment: "Menubar option. %@ is AltTab"), App.displayName), #selector(App.showAboutWindow), "", "info.circle", nil, App.self)
         addMenuItem(NSLocalizedString("Debug tools", comment: "Menubar option"), #selector(App.showDebugWindow), "", "scope", nil, App.self)
-        addMenuItem(NSLocalizedString("Send feedback…", comment: "Menubar option"), #selector(App.showFeedbackPanel), "", "text.bubble", nil, App.self)
+        addMenuItem(NSLocalizedString("Send feedback", comment: "Menubar option") + "…", #selector(App.showFeedbackPanel), "", "text.bubble", nil, App.self)
         upgradeToProMenuItem = addMenuItem(NSLocalizedString("Get Pro", comment: "Menubar option"), App.upgradeToProAction, "", "star.fill", nil, App.self)
         upgradeToProMenuItem.view = UpgradeMenuItemView()
         myAccountMenuItem = addMenuItem(NSLocalizedString("My Account", comment: ""), App.openAccountAction, "", "person.crop.circle", nil, App.self)
@@ -87,6 +87,10 @@ class Menubar {
         guard upgradeToProMenuItem != nil else { return }
         let state = LicenseManager.shared.state
         switch state {
+        case .trialNotStarted:
+            toggleUpgradeMenuItem(false)
+            supportProjectMenuItem.isHidden = true
+            myAccountMenuItem.isHidden = true
         case .trial:
             toggleUpgradeMenuItem(true)
             supportProjectMenuItem.isHidden = true
@@ -203,7 +207,7 @@ class Menubar {
         }
     }
 
-    private static var badgeDotLayer: CALayer?
+    private(set) static var badgeDotLayer: CALayer?
 
     /// `NSStatusBar.system.thickness`: the status item working area, 22pt on every macOS so far
     /// (the visible menubar is taller since Tahoe, but items stay in a centred 22pt band).
@@ -278,7 +282,7 @@ class UpgradeMenuItemView: NSView {
         backdrop.layer?.addSublayer(gradientLayer)
         addSubview(backdrop)
         label.translatesAutoresizingMaskIntoConstraints = false
-        label.maximumNumberOfLines = 2
+        label.maximumNumberOfLines = 3
         label.isEditable = false
         label.isSelectable = false
         label.drawsBackground = false
@@ -320,7 +324,7 @@ class UpgradeMenuItemView: NSView {
 
     override var intrinsicContentSize: NSSize {
         let labelSize = label.intrinsicContentSize
-        return NSSize(width: NSView.noIntrinsicMetric, height: ceil(labelSize.height) + 6)
+        return NSSize(width: ceil(labelSize.width) + 53, height: ceil(labelSize.height) + 6)
     }
 
     override func layout() {
