@@ -22,4 +22,4 @@ ASSETCATALOG_COMPILER_APPICON_NAME = app // resources/icons/app/app.icon (Icon C
 CODE_SIGN_IDENTITY[config=Release] = Developer ID Application
 TEAM_ID = JFQXWZ2TMK // pbxproj: DEVELOPMENT_TEAM = ${TEAM_ID}; required with a generic identity
 // Tracked so a clean clone builds a versioned app; upstream injects it from semantic-release via gitignored local.xcconfig.
-CURRENT_PROJECT_VERSION = 11.9.1.1
+CURRENT_PROJECT_VERSION = 11.10.0.1
